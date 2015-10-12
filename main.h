@@ -17,7 +17,7 @@ extern "C" {
 #define	RELAY		PORTAbits.RA1
 
 #define VERH  2
-#define VERL  1
+#define VERL  7
 
 #define TMR0DATA  (0x080)
 #define TMR2DATA  (0x06)  // 256 - 250 5M/16 = 312500 / 250 = 1250/s

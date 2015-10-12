@@ -12,9 +12,9 @@
 extern "C" {
 #endif
 
-#define		E       PORTAbits.RA5 // RA5
-#define		RW			PORTAbits.RA3 //RA3
-#define		RS			PORTAbits.RA2 // RA2
+#define		E       LATAbits.LA5 // RA5
+#define		RW			LATAbits.LA3 //RA3
+#define		RS			LATAbits.LA2 // RA2
 
 #define		CLR_DISP		0x01
 #define		DISP_ON			0x0C

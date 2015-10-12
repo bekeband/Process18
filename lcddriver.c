@@ -20,7 +20,7 @@ void E_Pulse(void) {
 void InitLCD(void) {
 
 	INTCON 	= 0x0;			// Disable inerupt
-  ANSEL = 0;
+  ANSEL = 0x0;
 //	ADCON1  = 0x06;			// Port as Digital IO
   
   TRISAbits.TRISA2 = 0; // TRISA2 	= 0;			// RS pin as output

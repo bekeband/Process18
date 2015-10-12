@@ -34,8 +34,8 @@ extern "C" {
 #pragma config IESO = OFF       // Internal/External Oscillator Switchover bit (Oscillator Switchover mode disabled)
 
 // CONFIG2L
-#pragma config BOREN = OFF      // Brown-out Reset Enable bits (Brown-out Reset disabled in hardware and software)
-#pragma config BORV = 18       // Brown Out Reset Voltage bits (VBOR set to 1.90 V nominal)
+#pragma config BOREN = OFF     // Brown-out Reset Enable bits (Brown-out Reset disabled in hardware and software)
+#pragma config BORV =  18     // Brown Out Reset Voltage bits (VBOR set to 1.90 V nominal)
 
 // CONFIG2H
 #pragma config WDTEN = OFF      // Watchdog Timer Enable bits (Watch dog timer is always disabled. SWDTEN has no effect.)

@@ -10,7 +10,7 @@
 
 uint8_t but;
 
-unsigned char WELCOME[] = "PD873 VER %i.%i";
+unsigned char WELCOME[] = "PD18F VER %i.%i";
 
 s_setting_datas settings = {9600, 0, 625};
 s_analog_datas analogs;
@@ -31,6 +31,8 @@ unsigned int AD_VALUE;
 s_status PROGRAM_STATUS;    // Program status. and flags.
 int8_t ACTUAL_MENU = 0;
 
+int FLAG = 0;
+
 #define MAX_MENU_ITEM 2
 
 struct {
@@ -47,7 +49,7 @@ void interrupt isr(void)
     if (display_refresh_counter++ >= settings.display_refresh_time)
     {
       display_refresh_counter = 0;
-      PROGRAM_STATUS.DISPLAY_REFRESH = 1; /*    */
+//      PROGRAM_STATUS.DISPLAY_REFRESH = 1; /*    */
 //      LATBbits.LATB4 = !PORTBbits.RB4;
     }
   };
@@ -59,7 +61,6 @@ void interrupt isr(void)
   {
     PIR1bits.ADIF = 0;
     next_ad_data = (ADRESL + (ADRESH * 256));
-    next_ad_data >>= 6;
     AD_SUMMA += next_ad_data;
     if (AD_OVERSAMPLE_COUNTER++ >= 1024)
     {
@@ -76,6 +77,12 @@ void interrupt isr(void)
 void main()
 {
 	//OPTION 	= 0x80;		// PORTB pull-ups are disabled
+
+  PORTA = 0;
+  LATA = 0;
+  ANSEL = 0x01;
+  TRISA = 0x01;     //
+
   ANSELH = 0;
   TRISBbits.TRISB5 = 0;
   TRISBbits.TRISB4 = 0;
@@ -91,10 +98,11 @@ void main()
   IPR1bits.TMR2IP = 1;
   T2CONbits.TMR2ON = 1;
 
-  InitButtons();
+//  InitButtons();
 
   InitLCD();
-	LCDSendCmd(DISP_ON);
+
+  LCDSendCmd(DISP_ON);
 	LCDSendCmd(CLR_DISP);
   sprintf(DPBUFFER, WELCOME, VERH, VERL);
 	LCDSendStr(DPBUFFER);
@@ -104,7 +112,7 @@ void main()
   RELAY = 0;
 
   ADCON1 = 0;
-  ADCON2 = 0b10111110;
+  ADCON2 = 0b10111101;
   ADCON0 = 0b00000001;
 
   PIR1bits.ADIF = 0;
@@ -118,20 +126,80 @@ void main()
 
     but = ButtonScan();
 
-/*    if (but == BUT_UP_OFF) LATBbits.LATB4 = ON;
+    switch (MAIN_STATE)
+    {
+
+/* ------------------------- MAIN DISPLAY ----------------------------------*/
+    case MAIN_DISPLAY:
+    if (PROGRAM_STATUS.AD_REFRESH)
+    {
+      sprintf(DPBUFFER, "%6i", AD_VALUE);
+      LCDSendCmd(DD_RAM_ADDR2);
+      LCDSendStr(DPBUFFER);
+      PROGRAM_STATUS.DISPLAY_REFRESH = 0;
+      PROGRAM_STATUS.AD_REFRESH = 0;
+    }
+
+/* ------------------------- MAIN DISPLAY BUTTONS HANDLE --------------------*/
+
+    switch (but)
+    {
+      case BUT_OK_OFF:
+        MAIN_STATE = MENU_DISPLAY;
+        PROGRAM_STATUS.MUST_REDRAW = 1;
+        break;
+      case BUT_RG_OFF:
+        break;
+    }
+
+
+/* ------------------------ MAIN DISPLAY END -------------------------------*/
+        break;
+
+/* ------------------------ MENU DISPLAY -----------------------------------*/
+        static int r_c = 0;
+    case MENU_DISPLAY:
+
+      if (FLAG == 0)
+      {
+//        char* actual_menu_title = s_menu_item[ACTUAL_MENU].title;
+        LCDSendCmd(CLR_DISP);
+        LCDSendCmd(DD_RAM_ADDR + 2); // (16 - (strlen(menu_items[ACTUAL_MENU].title) / 2)));
+        sprintf(DPBUFFER, "%s %i", menu_items[ACTUAL_MENU].title, r_c++);
+        LCDSendStr(DPBUFFER);
+        PROGRAM_STATUS.MUST_REDRAW = 0;
+        FLAG = 1;
+      }
+
+/* ------------------------ MENU DISPLAY BUTTONS HANDLE ---------------------*/
+
+    switch (but)
+    {
+      case BUT_UP_OFF:
+        if (ACTUAL_MENU == (MAX_MENU_ITEM - 1)) { ACTUAL_MENU = 0; }
+        else ACTUAL_MENU++;
+        PROGRAM_STATUS.MUST_REDRAW = 1;
+        break;
+      case BUT_DN_OFF:
+        if (ACTUAL_MENU == 0){ ACTUAL_MENU = (MAX_MENU_ITEM - 1); }
+        else {ACTUAL_MENU--;}
+        PROGRAM_STATUS.MUST_REDRAW = 1;
+        break;
+    }
+
+        break;
+    }
+
+
+
+
+    if (but == BUT_UP_OFF) LATBbits.LATB4 = ON;
     else if (but == BUT_DN_OFF) LATBbits.LATB4 = OFF;
     else
     {
 
-    }*/
+    }
 
-    DelayMs(200);
-
-    LATBbits.LATB4 = ON;
-
-    DelayMs(200);
-
-    LATBbits.LATB4 = OFF;
 
   }
   
