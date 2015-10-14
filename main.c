@@ -2,11 +2,13 @@
 #include <htc.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include "config.h"
 #include "main.h"
 #include "buttons.h"
 #include "lcddriver.h"
 #include "delay.h"
+#include "menu.c"
 
 uint8_t but;
 
@@ -31,15 +33,9 @@ unsigned int AD_VALUE;
 s_status PROGRAM_STATUS;    // Program status. and flags.
 int8_t ACTUAL_MENU = 0;
 
-int FLAG = 0;
-
-#define MAX_MENU_ITEM 2
-
-struct {
-  uint8_t feature;
-  char * title;
-} menu_items[MAX_MENU_ITEM] = {{ 0b00000011, (char*)"INPUT"},{0b00000011, (char*)"TYPE"}};
-
+int8_t MENU_LEVEL_01 = 0;   // Position of first menu level.
+int8_t MENU_LEVEL_02 = 0;   // Position of second menu level.
+int8_t HIGH_LEVEL_MENU;     // Whether where was in main menu ?
 
 void interrupt isr(void)
 {
@@ -102,11 +98,6 @@ void main()
 
   InitLCD();
 
-  LCDSendCmd(DISP_ON);
-	LCDSendCmd(CLR_DISP);
-  sprintf(DPBUFFER, WELCOME, VERH, VERL);
-	LCDSendStr(DPBUFFER);
-
 	TRISAbits.TRISA1 = 0;	// RELAY pin as output
   TRISAbits.TRISA4 = 0; // freq pin as output.
   RELAY = 0;
@@ -120,6 +111,7 @@ void main()
   INTCONbits.PEIE = 1;
   INTCONbits.GIE = 1;
   ADCON0bits.GO = 1;  // First start A/D conversion.
+  PROGRAM_STATUS.MUST_REDRAW = 1;
 
   while (1)
   {
@@ -131,6 +123,14 @@ void main()
 
 /* ------------------------- MAIN DISPLAY ----------------------------------*/
     case MAIN_DISPLAY:
+      if (PROGRAM_STATUS.MUST_REDRAW)
+      {
+        LCDSendCmd(DISP_ON);
+        LCDSendCmd(CLR_DISP);
+        sprintf(DPBUFFER, WELCOME, VERH, VERL);
+        LCDSendStr(DPBUFFER);
+        PROGRAM_STATUS.MUST_REDRAW = 0;
+      }
     if (PROGRAM_STATUS.AD_REFRESH)
     {
       sprintf(DPBUFFER, "%6i", AD_VALUE);
@@ -157,18 +157,16 @@ void main()
         break;
 
 /* ------------------------ MENU DISPLAY -----------------------------------*/
-        static int r_c = 0;
+
     case MENU_DISPLAY:
 
-      if (FLAG == 0)
+      if (PROGRAM_STATUS.MUST_REDRAW)
       {
-//        char* actual_menu_title = s_menu_item[ACTUAL_MENU].title;
         LCDSendCmd(CLR_DISP);
-        LCDSendCmd(DD_RAM_ADDR + 2); // (16 - (strlen(menu_items[ACTUAL_MENU].title) / 2)));
-        sprintf(DPBUFFER, "%s %i", menu_items[ACTUAL_MENU].title, r_c++);
+        LCDSendCmd(DD_RAM_ADDR + ((DISPLAY_WIDTH - strlen(main_menus[ACTUAL_MENU].title)) / 2));
+        sprintf(DPBUFFER, "%s", main_menus[ACTUAL_MENU].title);
         LCDSendStr(DPBUFFER);
         PROGRAM_STATUS.MUST_REDRAW = 0;
-        FLAG = 1;
       }
 
 /* ------------------------ MENU DISPLAY BUTTONS HANDLE ---------------------*/
@@ -176,13 +174,25 @@ void main()
     switch (but)
     {
       case BUT_UP_OFF:
-        if (ACTUAL_MENU == (MAX_MENU_ITEM - 1)) { ACTUAL_MENU = 0; }
+        if (ACTUAL_MENU == (MAIN_MENU_ITEMS - 1)) { ACTUAL_MENU = 0; }
         else ACTUAL_MENU++;
         PROGRAM_STATUS.MUST_REDRAW = 1;
         break;
       case BUT_DN_OFF:
-        if (ACTUAL_MENU == 0){ ACTUAL_MENU = (MAX_MENU_ITEM - 1); }
+        if (ACTUAL_MENU == 0){ ACTUAL_MENU = (MAIN_MENU_ITEMS - 1); }
         else {ACTUAL_MENU--;}
+        PROGRAM_STATUS.MUST_REDRAW = 1;
+        break;
+        /* Enter the submenu, if there are.*/
+      case BUT_OK_OFF:
+        /* Save the high level menu.*/
+        HIGH_LEVEL_MENU = ACTUAL_MENU;
+        ACTUAL_MENU = 0;
+        
+        break;
+        /* Back the menu level, if there, or MAIN display.*/
+      case BUT_ES_OFF:
+        MAIN_STATE = MAIN_DISPLAY;
         PROGRAM_STATUS.MUST_REDRAW = 1;
         break;
     }
@@ -191,14 +201,12 @@ void main()
     }
 
 
-
-
-    if (but == BUT_UP_OFF) LATBbits.LATB4 = ON;
+/*    if (but == BUT_UP_OFF) LATBbits.LATB4 = ON;
     else if (but == BUT_DN_OFF) LATBbits.LATB4 = OFF;
     else
     {
 
-    }
+    }*/
 
 
   }

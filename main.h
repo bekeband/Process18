@@ -25,13 +25,13 @@ extern "C" {
 #define MAIN_DISPLAY  56
 #define MENU_DISPLAY  65
 
-  typedef struct {
-  union {
+  typedef union {
+  struct {
     unsigned DISPLAY_REFRESH: 1;
     unsigned AD_REFRESH:      1;
     unsigned MUST_REDRAW:     1;
   };
-  union {
+  struct {
     uint8_t STATUS_BYTE;
   };
 } s_status;

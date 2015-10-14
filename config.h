@@ -18,6 +18,8 @@ extern "C" {
 #define TYPE_LETTER "PD"
 #define TYPE_NUMBER 786
 
+#define DISPLAY_WIDTH   16
+
   /* Version constants. */
 #define VER_H 2
 #define VER_L 7
