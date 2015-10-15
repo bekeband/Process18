@@ -53,6 +53,7 @@ typedef struct s_analog_data {
   float summa;
 } s_analog_datas;
 
+
 #ifdef	__cplusplus
 }
 #endif

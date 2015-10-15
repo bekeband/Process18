@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+#define DISPLAY_WIDTH   16
+
 #define		E       LATAbits.LA5 // RA5
 #define		RW			LATAbits.LA3 //RA3
 #define		RS			LATAbits.LA2 // RA2

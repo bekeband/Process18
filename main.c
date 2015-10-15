@@ -8,7 +8,7 @@
 #include "buttons.h"
 #include "lcddriver.h"
 #include "delay.h"
-#include "menu.c"
+#include "menu.h"
 
 uint8_t but;
 
@@ -20,7 +20,8 @@ s_analog_datas analogs;
 static char DPBUFFER[20];
 unsigned int next_ad_data;
 
-unsigned int MAIN_STATE = MAIN_DISPLAY;
+//unsigned int MAIN_STATE = MAIN_DISPLAY;
+unsigned int MAIN_STATE = MENU_DISPLAY;
 
 /* display refresh counter to display refresh time calculating.. */
 static unsigned int display_refresh_counter = 0;
@@ -32,6 +33,8 @@ unsigned int AD_VALUE;
 
 s_status PROGRAM_STATUS;    // Program status. and flags.
 int8_t ACTUAL_MENU = 0;
+
+p_menu_item actual_menu;
 
 int8_t MENU_LEVEL_01 = 0;   // Position of first menu level.
 int8_t MENU_LEVEL_02 = 0;   // Position of second menu level.
@@ -71,7 +74,7 @@ void interrupt isr(void)
 };
 
 void main()
-{
+{ int8_t MenuComm;
 	//OPTION 	= 0x80;		// PORTB pull-ups are disabled
 
   PORTA = 0;
@@ -112,6 +115,8 @@ void main()
   INTCONbits.GIE = 1;
   ADCON0bits.GO = 1;  // First start A/D conversion.
   PROGRAM_STATUS.MUST_REDRAW = 1;
+
+  actual_menu = &main_menus[0];
 
   while (1)
   {
@@ -160,43 +165,23 @@ void main()
 
     case MENU_DISPLAY:
 
-      if (PROGRAM_STATUS.MUST_REDRAW)
-      {
-        LCDSendCmd(CLR_DISP);
-        LCDSendCmd(DD_RAM_ADDR + ((DISPLAY_WIDTH - strlen(main_menus[ACTUAL_MENU].title)) / 2));
-        sprintf(DPBUFFER, "%s", main_menus[ACTUAL_MENU].title);
-        LCDSendStr(DPBUFFER);
-        PROGRAM_STATUS.MUST_REDRAW = 0;
-      }
-
 /* ------------------------ MENU DISPLAY BUTTONS HANDLE ---------------------*/
+//      MenuComm = ProcessMenu(but, &ACTUAL_MENU, MAIN_MENU_ITEMS, &PROGRAM_STATUS);
+      actual_menu = MenuProcess(but, actual_menu, &PROGRAM_STATUS);
 
-    switch (but)
-    {
-      case BUT_UP_OFF:
-        if (ACTUAL_MENU == (MAIN_MENU_ITEMS - 1)) { ACTUAL_MENU = 0; }
-        else ACTUAL_MENU++;
-        PROGRAM_STATUS.MUST_REDRAW = 1;
-        break;
-      case BUT_DN_OFF:
-        if (ACTUAL_MENU == 0){ ACTUAL_MENU = (MAIN_MENU_ITEMS - 1); }
-        else {ACTUAL_MENU--;}
-        PROGRAM_STATUS.MUST_REDRAW = 1;
-        break;
-        /* Enter the submenu, if there are.*/
-      case BUT_OK_OFF:
-        /* Save the high level menu.*/
-        HIGH_LEVEL_MENU = ACTUAL_MENU;
-        ACTUAL_MENU = 0;
+      if (MenuComm == WALKING_MENU)
+      { /* Nothing to do. */
+//        PROGRAM_STATUS.MUST_REDRAW = 1;
+/*        LCDSendCmd(DD_RAM_ADDR2);
+        sprintf(DPBUFFER, "%i", ACTUAL_MENU);
+        LCDSendStr(DPBUFFER);*/
+      }else if (MenuComm == BACK_THE_MENU)
+      { /* Back the menu level. */
+
+      } else
+      { /* Select the submenu !*/
         
-        break;
-        /* Back the menu level, if there, or MAIN display.*/
-      case BUT_ES_OFF:
-        MAIN_STATE = MAIN_DISPLAY;
-        PROGRAM_STATUS.MUST_REDRAW = 1;
-        break;
-    }
-
+      }
         break;
     }
 
@@ -213,3 +198,5 @@ void main()
   
 
 }
+
+
