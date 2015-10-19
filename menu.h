@@ -14,17 +14,23 @@ extern "C" {
 
 #include "main.h"
 
-/*#define MAIN_MENU_ITEMS 4
-#define INPUT_MENU_ITEMS 3
-#define DISPLAY_MENU_ITEMS 2
-#define SYSTEM_MENU_ITEMS 2*/
-
 typedef struct s_menu_item* p_menu_item;
+
+typedef enum e_data_type {ENUM, TINT, FLOAT, TEXT};
+typedef enum e_menu_type {EDITED_VALUE, VIEWED_VALUE, HAS_SUBMENU};
+
+struct s_menu_options {
+  uint8_t SEC_LEVEL;
+  uint8_t MENU_TYPE;
+  uint8_t DATA_TYPE;
+};
 
 struct s_menu_item {
   p_menu_item next_menu;
   p_menu_item prev_menu;
-  p_menu_item sub_menu;
+  void* param1;
+  void* param2;
+  struct s_menu_options options;
   char * title;
 };
 
@@ -38,7 +44,7 @@ struct s_menu_item {
 
 extern struct s_menu_item main_menus[];
 
-p_menu_item MenuProcess(uint8_t but, p_menu_item menuptr, s_status* PROGRAM_STATUS);
+int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS);
 
 #ifdef	__cplusplus
 }

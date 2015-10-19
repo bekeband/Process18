@@ -21,7 +21,7 @@ static char DPBUFFER[20];
 unsigned int next_ad_data;
 
 //unsigned int MAIN_STATE = MAIN_DISPLAY;
-unsigned int MAIN_STATE = MENU_DISPLAY;
+unsigned int MAIN_STATE = MAIN_DISPLAY;
 
 /* display refresh counter to display refresh time calculating.. */
 static unsigned int display_refresh_counter = 0;
@@ -33,8 +33,6 @@ unsigned int AD_VALUE;
 
 s_status PROGRAM_STATUS;    // Program status. and flags.
 int8_t ACTUAL_MENU = 0;
-
-p_menu_item actual_menu;
 
 int8_t MENU_LEVEL_01 = 0;   // Position of first menu level.
 int8_t MENU_LEVEL_02 = 0;   // Position of second menu level.
@@ -116,8 +114,6 @@ void main()
   ADCON0bits.GO = 1;  // First start A/D conversion.
   PROGRAM_STATUS.MUST_REDRAW = 1;
 
-  actual_menu = &main_menus[0];
-
   while (1)
   {
 
@@ -166,33 +162,14 @@ void main()
     case MENU_DISPLAY:
 
 /* ------------------------ MENU DISPLAY BUTTONS HANDLE ---------------------*/
-//      MenuComm = ProcessMenu(but, &ACTUAL_MENU, MAIN_MENU_ITEMS, &PROGRAM_STATUS);
-      actual_menu = MenuProcess(but, actual_menu, &PROGRAM_STATUS);
 
-      if (MenuComm == WALKING_MENU)
-      { /* Nothing to do. */
-//        PROGRAM_STATUS.MUST_REDRAW = 1;
-/*        LCDSendCmd(DD_RAM_ADDR2);
-        sprintf(DPBUFFER, "%i", ACTUAL_MENU);
-        LCDSendStr(DPBUFFER);*/
-      }else if (MenuComm == BACK_THE_MENU)
-      { /* Back the menu level. */
-
-      } else
-      { /* Select the submenu !*/
-        
+      if (MenuProcess(but, &PROGRAM_STATUS))
+      {
+        PROGRAM_STATUS.MUST_REDRAW = 1;
+        MAIN_STATE = MAIN_DISPLAY;
       }
-        break;
+    break;
     }
-
-
-/*    if (but == BUT_UP_OFF) LATBbits.LATB4 = ON;
-    else if (but == BUT_DN_OFF) LATBbits.LATB4 = OFF;
-    else
-    {
-
-    }*/
-
 
   }
   
