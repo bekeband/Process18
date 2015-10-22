@@ -20,7 +20,7 @@ s_analog_datas analogs;
 static char DPBUFFER[20];
 unsigned int next_ad_data;
 
-//unsigned int MAIN_STATE = MAIN_DISPLAY;
+//unsigned int MAIN_STATE = MENU_DISPLAY;
 unsigned int MAIN_STATE = MAIN_DISPLAY;
 
 /* display refresh counter to display refresh time calculating.. */
@@ -33,10 +33,6 @@ unsigned int AD_VALUE;
 
 s_status PROGRAM_STATUS;    // Program status. and flags.
 int8_t ACTUAL_MENU = 0;
-
-int8_t MENU_LEVEL_01 = 0;   // Position of first menu level.
-int8_t MENU_LEVEL_02 = 0;   // Position of second menu level.
-int8_t HIGH_LEVEL_MENU;     // Whether where was in main menu ?
 
 void interrupt isr(void)
 {
@@ -73,7 +69,8 @@ void interrupt isr(void)
 
 void main()
 { int8_t MenuComm;
-	//OPTION 	= 0x80;		// PORTB pull-ups are disabled
+	char DPBUFFER[DISPLAY_WIDTH + 1];
+  PROGRAM_STATUS.MUST_REDRAW = 1;
 
   PORTA = 0;
   LATA = 0;
@@ -162,6 +159,7 @@ void main()
     case MENU_DISPLAY:
 
 /* ------------------------ MENU DISPLAY BUTTONS HANDLE ---------------------*/
+
 
       if (MenuProcess(but, &PROGRAM_STATUS))
       {

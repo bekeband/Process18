@@ -15,9 +15,11 @@ extern "C" {
 #include "main.h"
 
 typedef struct s_menu_item* p_menu_item;
-
 typedef enum e_data_type {ENUM, TINT, FLOAT, TEXT};
 typedef enum e_menu_type {EDITED_VALUE, VIEWED_VALUE, HAS_SUBMENU};
+
+typedef void *t_GetTextFunction(char*);
+typedef int *t_MenuValueFunction(char*);
 
 struct s_menu_options {
   uint8_t SEC_LEVEL;
@@ -31,9 +33,14 @@ struct s_menu_item {
   void* param1;
   void* param2;
   struct s_menu_options options;
-  char * title;
+  const char * title;
 };
 
+struct s_enum_item {
+  uint8_t* address;
+  uint8_t size;
+  const char* array;
+};
 
 #define WALKING_MENU        1
 #define SELECT_MENU         2

@@ -2,17 +2,41 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include "config.h"
 #include "menu.h"
 #include "buttons.h"
 #include "lcddriver.h"
 
+static void GetVersion(char* c)
+{
+  sprintf(c, "VER %i.%i", VER_H, VER_L);
+}
+
+static void GetEnumText(char* c) // int enum_position)
+{
+  sprintf(c, "ENUM TEXT");
+}
+
+int MenuValueFunction(char* c)
+{
+  sprintf(c, "MENUVALUE");
+}
+
+const char* display_datas_enum_array[] = {"PROCESS DATA","RAW DATA","SUMMA 1","SUMMA 2"};
+uint8_t dt;
+struct s_enum_item display_enum_datas = {&dt, 4, display_datas_enum_array};
+
+struct s_menu_item display_datas_menus[] =
+{ {&display_datas_menus[1], &display_datas_menus[1], GetEnumText, &display_enum_datas, {0,0,ENUM},(char*)"TOP LINE"}  ,
+  {&display_datas_menus[0], &display_datas_menus[0], GetEnumText, &display_enum_datas, {0,0,ENUM}, (char*)"BOTTOM LINE"}};
+
 struct s_menu_item display_menus[] =
-{ {&display_menus[1], &display_menus[1], NULL, NULL, {0,0,0},(char*)"REFR"}  ,
-  {&display_menus[0], &display_menus[0], NULL, NULL, {0,0,0}, (char*)"DATAS"}};
+{ {&display_menus[1], &display_menus[1], &MenuValueFunction, NULL, {0,0,FLOAT},(char*)"REFR"}  ,
+  {&display_menus[0], &display_menus[0], &display_datas_menus, NULL, {0,HAS_SUBMENU,0}, (char*)"DATAS"}};
 
 struct s_menu_item system_menus[] =
 { {&system_menus[1], &system_menus[2], NULL, NULL, {0,0,0}, (char*)"SERIAL"},
-  {&system_menus[2], &system_menus[0], NULL, NULL, {0,VIEWED_VALUE,0}, (char*)"VERSION"},
+  {&system_menus[2], &system_menus[0], GetVersion, NULL, {0, VIEWED_VALUE, TEXT}, (char*)"VERSION"},
   {&system_menus[0], &system_menus[1], NULL, NULL, {0,0,0}, (char*)"RESET"}};
 
 struct s_menu_item input_menus[] =
@@ -21,7 +45,8 @@ struct s_menu_item input_menus[] =
   {&input_menus[0], &input_menus[1], NULL, NULL, {0,0,0}, (char*)"CALIB"}};
 
 struct s_menu_item main_menus[] = 
-{ {&main_menus[1], &main_menus[3], &input_menus[0], NULL, {0,HAS_SUBMENU,0},(char*)"INPUT"},
+//{ {&main_menus[1], &main_menus[3], &input_menus[0], NULL, {0,HAS_SUBMENU,0},(char*)"INPUT"},
+{ {&main_menus[1], &main_menus[3], NULL, NULL, {0,0,0},(char*)"INPUT"},
   {&main_menus[2], &main_menus[0], NULL, NULL, {0,0,0},(char*)"OUTPUT"},
   {&main_menus[3], &main_menus[1], &display_menus[0], NULL, {0,HAS_SUBMENU,0},(char*)"DISPLAY"},
   {&main_menus[0], &main_menus[2], &system_menus[0], NULL, {0,HAS_SUBMENU,0},(char*)"SYSTEM"}};
@@ -29,9 +54,14 @@ struct s_menu_item main_menus[] =
 uint8_t menu_stack_ptr = 0;
 p_menu_item menu_stack[3] = {&main_menus[0], };
 
+void PrintMenuValue(char* buffer, t_GetTextFunction gettext)
+{
+  gettext(buffer);
+}
+
 int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
 { char DPBUFFER[DISPLAY_WIDTH + 1]; int retval = 0;
-  char VALBUFFER[DISPLAY_WIDTH + 1];
+  char VALBUFFER[DISPLAY_WIDTH + 1]; 
 
   if (PROGRAM_STATUS->MUST_REDRAW)
     {
@@ -42,10 +72,10 @@ int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
       } else
       { /* No submenu perhaps enumerate, or direct value setting. */
         sprintf(DPBUFFER, "<- %s :", menu_stack[menu_stack_ptr]->title);
-        sprintf(VALBUFFER, "DT = %i", menu_stack[menu_stack_ptr]->options.DATA_TYPE);
-/*        if (menu_stack[menu_stack_ptr]->options.DATA_TYPE == TEXT)
+        if (menu_stack[menu_stack_ptr]->options.DATA_TYPE == TEXT)
         {
-          sprintf(VALBUFFER, "TEXT DATA");
+//          sprintf(VALBUFFER, "TEXT DATA");
+          PrintMenuValue(VALBUFFER, menu_stack[menu_stack_ptr]->param1);
         } else
         if (menu_stack[menu_stack_ptr]->options.DATA_TYPE == ENUM)
         {
@@ -53,12 +83,14 @@ int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
         }else
         if (menu_stack[menu_stack_ptr]->options.DATA_TYPE == FLOAT)
         {
-          sprintf(VALBUFFER, "FLOAT DATA");
+          t_MenuValueFunction* F = menu_stack[menu_stack_ptr]->param1;
+          F(VALBUFFER);
+//          sprintf(VALBUFFER, "FLOAT DATA");
         }
         if (menu_stack[menu_stack_ptr]->options.DATA_TYPE == TINT)
         {
           sprintf(VALBUFFER, "INT DATA");
-        }*/
+        }
       }
       LCDSendCmd(DD_RAM_ADDR + ((DISPLAY_WIDTH - strlen(DPBUFFER)) / 2));
       LCDSendStr(DPBUFFER);
