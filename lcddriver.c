@@ -1,6 +1,4 @@
 
-
-
 #include <htc.h>
 #include "lcddriver.h"
 #include "delay.h"

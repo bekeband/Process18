@@ -40,19 +40,29 @@ typedef struct  {
   uint8_t serial_speed;
   uint8_t button_beep;
   uint16_t display_refresh_time;
+  uint8_t   display_topline;
+  uint8_t   display_botline;
 }s_setting_datas;
 
-typedef struct s_analog_data {
-  uint8_t input_type; // 0 = 4 - 20 mA, 1 = 0- 20 mA
-  float min_val;
-  float max_val;
-  uint16_t min_eng;
-  uint16_t max_eng;
-  uint8_t input_dim;
-  uint8_t average;
-  float summa;
-} s_analog_datas;
+typedef s_setting_datas* p_setting_datas;
 
+typedef struct {
+  uint8_t   input_type; // 0 = 4 - 20 mA, 1 = 0- 20 mA
+  uint8_t   input_dimension;
+  float     min_val;
+  float     max_val;
+  uint16_t  min_eng;
+  uint16_t  max_eng;
+  uint8_t   input_dim;
+  uint8_t   average;
+  float     summa;
+} s_analog_data;
+
+typedef s_analog_data* p_analog_data;
+
+char* GetDisplayBuffer(int line);
+p_analog_data GetAnalogDataPtr(int channel);
+p_setting_datas GetSettingPtr();
 
 #ifdef	__cplusplus
 }

@@ -9,15 +9,18 @@
 #include "lcddriver.h"
 #include "delay.h"
 #include "menu.h"
+#include "eeprom.h"
 
 uint8_t but;
 
 unsigned char WELCOME[] = "PD18F VER %i.%i";
 
-s_setting_datas settings = {9600, 0, 625};
-s_analog_datas analogs;
+s_setting_datas settings = {0, 0, 625, 1, 2};
+s_analog_data analogs[ANALOG_CHANNELS] = {{0, 0, 0, 100, 0, 567, 28767}};
 
-static char DPBUFFER[20];
+static char LINE_01_BUFFER[DISPLAY_WIDTH + 1];
+static char LINE_02_BUFFER[DISPLAY_WIDTH + 1];
+
 unsigned int next_ad_data;
 
 //unsigned int MAIN_STATE = MENU_DISPLAY;
@@ -33,6 +36,17 @@ unsigned int AD_VALUE;
 
 s_status PROGRAM_STATUS;    // Program status. and flags.
 int8_t ACTUAL_MENU = 0;
+
+p_analog_data GetAnalogDataPtr(int channel)
+{ return &(analogs[channel]);};
+
+p_setting_datas GetSettingPtr() { return &settings; }
+
+char* GetDisplayBuffer(int line)
+{
+  if (line == 1) return LINE_01_BUFFER;
+  else return LINE_02_BUFFER;
+}
 
 void interrupt isr(void)
 {
@@ -110,6 +124,8 @@ void main()
   INTCONbits.GIE = 1;
   ADCON0bits.GO = 1;  // First start A/D conversion.
   PROGRAM_STATUS.MUST_REDRAW = 1;
+
+  InitSettingDatas();
 
   while (1)
   {

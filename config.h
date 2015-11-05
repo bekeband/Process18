@@ -83,6 +83,8 @@ extern "C" {
 #pragma config EBTRB = OFF      // Boot Block Table Read Protection bit (Boot Block (000000-0007FFh) not protected from table reads executed in other blocks)
 
 
+#define ANALOG_CHANNELS 1
+
 #ifdef	__cplusplus
 }
 #endif

@@ -1,5 +1,5 @@
 
-#include <xc.h>
+#include <htc.h>
 #include "buttons.h"
 #include "delay.h"
 
