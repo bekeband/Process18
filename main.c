@@ -13,13 +13,15 @@
 
 uint8_t but;
 
-unsigned char WELCOME[] = "PD18F VER %i.%i";
+char WELCOME[] = "PD18F VER %i.%i";
 
-s_setting_datas settings = {0, 0, 625, 1, 2};
+s_setting_datas settings = {0, 0, 1, 1, 2};
 s_analog_data analogs[ANALOG_CHANNELS] = {{0, 0, 0, 100, 0, 567, 28767}};
 
 static char LINE_01_BUFFER[DISPLAY_WIDTH + 1];
 static char LINE_02_BUFFER[DISPLAY_WIDTH + 1];
+
+unsigned int display_refres_time = 625;
 
 unsigned int next_ad_data;
 
@@ -46,6 +48,31 @@ char* GetDisplayBuffer(int line)
 {
   if (line == 1) return LINE_01_BUFFER;
   else return LINE_02_BUFFER;
+}
+
+int GetADsDataFromEEPROM()
+{
+  ReadDataEEP((uint8_t*)&analogs, ADS_BEGIN_EEPROM_ADDRESS, sizeof(analogs));
+}
+
+int GetSettingsDataFromEEPROM()
+{
+  ReadDataEEP((uint8_t*)&settings, SETTINGS_BEGIN_EEPROM_ADDRESS, sizeof(settings));
+}
+
+int SetSettingsDataToEEPROM()
+{
+  WriteDataEEP((uint8_t*)&settings, SETTINGS_BEGIN_EEPROM_ADDRESS, sizeof(settings));
+}
+
+int SetADsDataToEEPROM()
+{
+  WriteDataEEP((uint8_t*)&analogs, ADS_BEGIN_EEPROM_ADDRESS, sizeof(analogs));
+}
+
+void InitSettings()
+{
+
 }
 
 void interrupt isr(void)
@@ -125,6 +152,13 @@ void main()
   ADCON0bits.GO = 1;  // First start A/D conversion.
   PROGRAM_STATUS.MUST_REDRAW = 1;
 
+  
+
+  GetADsDataFromEEPROM();
+  GetSettingsDataFromEEPROM();
+
+  /* TODO Init datas remove !!!*/
+
   InitSettingDatas();
 
   while (1)
@@ -137,14 +171,15 @@ void main()
 
 /* ------------------------- MAIN DISPLAY ----------------------------------*/
     case MAIN_DISPLAY:
-      if (PROGRAM_STATUS.MUST_REDRAW)
-      {
-        LCDSendCmd(DISP_ON);
-        LCDSendCmd(CLR_DISP);
-        sprintf(DPBUFFER, WELCOME, VERH, VERL);
-        LCDSendStr(DPBUFFER);
-        PROGRAM_STATUS.MUST_REDRAW = 0;
-      }
+    if (PROGRAM_STATUS.MUST_REDRAW)
+    {
+      LCDSendCmd(DISP_ON);
+      LCDSendCmd(CLR_DISP);
+      sprintf(DPBUFFER, WELCOME, VERH, VERL);
+      LCDSendStr(DPBUFFER);
+      PROGRAM_STATUS.MUST_REDRAW = 0;
+    }
+
     if (PROGRAM_STATUS.AD_REFRESH)
     {
       sprintf(DPBUFFER, "%6i", AD_VALUE);

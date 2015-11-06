@@ -1,7 +1,7 @@
-
+#include <stdint.h>
 #include <htc.h>
 
-void ReadDataEEP(char* d_ptr, int baddr, int size)
+void ReadDataEEP(uint8_t* d_ptr, int baddr, int size)
 { int i;
   for (i=0; i < size; i++)
   {
@@ -9,7 +9,7 @@ void ReadDataEEP(char* d_ptr, int baddr, int size)
   }
 }
 
-void WriteDataEEP(unsigned char* d_ptr, int baddr, int size)
+void WriteDataEEP(uint8_t* d_ptr, int baddr, int size)
 {int i;
   for (i = 0; i < size; i++)
   {

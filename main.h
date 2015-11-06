@@ -39,7 +39,7 @@ extern "C" {
 typedef struct  {
   uint8_t serial_speed;
   uint8_t button_beep;
-  uint16_t display_refresh_time;
+  int16_t display_refresh_time;
   uint8_t   display_topline;
   uint8_t   display_botline;
 }s_setting_datas;

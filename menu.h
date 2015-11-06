@@ -37,7 +37,7 @@ struct s_menu_item {
 
 struct s_enum_data {
   uint8_t*  address;
-  uint8_t   size;
+  int8_t   size;
 };
 typedef struct s_enum_data* p_enum_data;
 

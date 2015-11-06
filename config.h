@@ -84,6 +84,12 @@ extern "C" {
 
 
 #define ANALOG_CHANNELS 1
+#define SETTINGS_BEGIN_EEPROM_ADDRESS 0x020
+#define ADS_BEGIN_EEPROM_ADDRESS      0x100
+#define LEFT_ARROW  0x7F
+#define RIGHT_ARROW 0x7E
+#define LEFT_ARROW_STRING   \x7F
+#define RIGHT_ARROW_STRING  \x7E
 
 #ifdef	__cplusplus
 }

@@ -20,6 +20,7 @@ struct s_enum_data display_data_topline = {NULL, 4};
 struct s_enum_data display_data_botline = {NULL, 4};
 struct s_enum_data serial_data = {NULL, 3};
 struct s_enum_data input_type_datas[ANALOG_CHANNELS] = {NULL, 2};
+struct s_int_data  refresh_data = {NULL, 1, 5};
 
 struct s_float_data input_low_range_datas[ANALOG_CHANNELS] = {NULL, -999999, 999999};
 struct s_float_data input_high_range_datas[ANALOG_CHANNELS] = {NULL, -999999, 999999};
@@ -29,7 +30,7 @@ struct s_menu_item display_datas_menus[] =
   {&display_datas_menus[0], &display_datas_menus[0], &display_data_botline, &display_datas_enum_array, {0,0,ENUM}, (char*)"BOTTOM LINE"}};
 
 struct s_menu_item display_menus[] =
-{ {&display_menus[1], &display_menus[1], NULL, NULL, {0,0,FLOAT},(char*)"REFR"}  ,
+{ {&display_menus[1], &display_menus[1], &refresh_data, NULL, {0,0,TINT},(char*)"REFRESH"}  ,
   {&display_menus[0], &display_menus[0], &display_datas_menus, NULL, {0,HAS_SUBMENU,0}, (char*)"DATAS"}};
 
 struct s_menu_item system_menus[] =
@@ -53,14 +54,20 @@ uint8_t menu_stack_ptr = 0;
 p_menu_item menu_stack[3] = {&main_menus[0], };
 
 void InitSettingDatas()
-{
+{ int i;
   display_data_topline.address = &(GetSettingPtr()->display_topline);
   display_data_botline.address = &(GetSettingPtr()->display_botline);
   serial_data.address = &(GetSettingPtr()->serial_speed);
-  input_type_datas[0].address = &(GetAnalogDataPtr(0))->input_type;
-  input_type_datas[0].address = &(GetAnalogDataPtr(0))->input_type;
-  input_low_range_datas[0].address = &(GetAnalogDataPtr(0))->min_val;
-  input_high_range_datas[0].address = &(GetAnalogDataPtr(0))->max_val;
+  refresh_data.address = &(GetSettingPtr()->display_refresh_time);
+
+  for (i = 0; i < ANALOG_CHANNELS; i++)
+  {
+    input_type_datas[i].address = &(GetAnalogDataPtr(i)->input_type);
+    input_type_datas[i].address = &(GetAnalogDataPtr(i)->input_type);
+    input_low_range_datas[i].address = &(GetAnalogDataPtr(i)->min_val);
+    input_high_range_datas[i].address = &(GetAnalogDataPtr(i)->max_val);
+  }
+
 }
 
 static void GetVersion(char* c)
@@ -71,10 +78,12 @@ static void GetVersion(char* c)
 int EnumMenuValueFunction(void* enumdata, const char* enumlist[])
 { p_enum_data pe; p_enum_data pe;
   pe = (p_enum_data)enumdata;
-  uint8_t val = *(pe->address);
-  if ((val >= 0) && (val < pe->size))
-    strcpy(GetDisplayBuffer(2), enumlist[val]);
-  else strcpy(GetDisplayBuffer(2), "N/A");
+  int8_t val = *(pe->address);
+  if (val < 0) val = (pe->size - 1);
+  if (val > (pe->size - 1)) val = 0;
+//  if ((val >= 0) && (val < pe->size))
+  strcpy(GetDisplayBuffer(2), enumlist[val]);
+//  else strcpy(GetDisplayBuffer(2), "N/A");
 }
 
 int FloatMenuValueFunction(void* p)
@@ -93,8 +102,38 @@ int TextMenuValueFunction(void* p)
 }
 
 int IntMenuValueFunction(void* p)
-{
-  sprintf(GetDisplayBuffer(2), "INT TYPE");
+{ p_int_data pi;
+  pi = (p_int_data)p;
+  int val = *(pi->address);
+  if ((val >= pi->minvalue) && (val <= pi->maxvalue))
+    sprintf(GetDisplayBuffer(2), "%8i", val);
+  else strcpy(GetDisplayBuffer(2), "N/A");
+}
+
+int EnumMenuEditFunction(void* enumdata, const char* enumlist[])
+{ uint8_t but; p_enum_data pe; int8_t val;
+  but = ButtonScan();
+  pe = (p_enum_data)enumdata;
+  val = *(pe->address);
+  switch (but)
+  {
+    case BUT_UP_OFF:
+      val++;
+      break;
+    case BUT_DN_OFF:
+      val--;
+      break;
+    case BUT_OK_OFF:
+      return 1;
+      break;
+    case BUT_ES_OFF:
+      return 1;
+      break;
+  }
+  EnumMenuValueFunction(enumdata, enumlist);
+  LCDSendCmd(DD_RAM_ADDR2 + ((DISPLAY_WIDTH - strlen(GetDisplayBuffer(2))) / 2));
+  LCDSendStr(GetDisplayBuffer(2));
+  return 0;
 }
 
 int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
@@ -153,6 +192,23 @@ int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
         menu_stack[menu_stack_ptr + 1] = menu_stack[menu_stack_ptr]->param1;
         menu_stack_ptr++;
         PROGRAM_STATUS->MUST_REDRAW = 1;
+      } else
+      {
+        switch (menu_stack[menu_stack_ptr]->options.DATA_TYPE)
+        {
+          case ENUM:
+            LCDSendCmd(DD_RAM_ADDR2);
+            LCDSendCmd(CUR_ON_BLINK);
+            while (!EnumMenuEditFunction(menu_stack[menu_stack_ptr]->param1, menu_stack[menu_stack_ptr]->param2));
+            LCDSendCmd(CUR_OFF);
+            break;
+          case TINT:
+            break;
+          case FLOAT:
+            break;
+          case TEXT:
+            break;
+        }
       }
     break;
 
