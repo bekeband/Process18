@@ -8,6 +8,9 @@
 #include "buttons.h"
 #include "lcddriver.h"
 
+
+s_menu_edit_status MENU_STATUS;
+
 static void GetVersion(char* c);
 
 const char* display_datas_enum_array[] = {"PROCESS DATA","RAW DATA","SUMMA 1","SUMMA 2"};
@@ -67,7 +70,6 @@ void InitSettingDatas()
     input_low_range_datas[i].address = &(GetAnalogDataPtr(i)->min_val);
     input_high_range_datas[i].address = &(GetAnalogDataPtr(i)->max_val);
   }
-
 }
 
 static void GetVersion(char* c)
@@ -75,15 +77,26 @@ static void GetVersion(char* c)
   sprintf(c, "VER %i.%i", VER_H, VER_L);
 }
 
-int EnumMenuValueFunction(void* enumdata, const char* enumlist[])
-{ p_enum_data pe; p_enum_data pe;
+int TestEnumValue(void* enumdata)
+{ p_enum_data pe; int retval = 0;
   pe = (p_enum_data)enumdata;
-  int8_t val = *(pe->address);
-  if (val < 0) val = (pe->size - 1);
-  if (val > (pe->size - 1)) val = 0;
-//  if ((val >= 0) && (val < pe->size))
-  strcpy(GetDisplayBuffer(2), enumlist[val]);
-//  else strcpy(GetDisplayBuffer(2), "N/A");
+  if ((*(pe->address)) < 0)
+  {
+    retval = 1;
+    *(pe->address) = (pe->size - 1);
+  };
+  if (*(pe->address) > (pe->size - 1))
+  {
+    retval = 1;
+    *(pe->address) = 0;
+  };
+  retval = 0;
+}
+
+int EnumMenuValueFunction(void* enumdata, const char* enumlist[])
+{ p_enum_data pe;
+  pe = (p_enum_data)enumdata;
+  strcpy(GetDisplayBuffer(2), enumlist[*(pe->address)]);
 }
 
 int FloatMenuValueFunction(void* p)
@@ -112,28 +125,39 @@ int IntMenuValueFunction(void* p)
 
 int EnumMenuEditFunction(void* enumdata, const char* enumlist[])
 { uint8_t but; p_enum_data pe; int8_t val;
-  but = ButtonScan();
+  but = ButtonScan(); int retval = 0;
   pe = (p_enum_data)enumdata;
   val = *(pe->address);
   switch (but)
   {
     case BUT_UP_OFF:
       val++;
+      *(pe->address) = val;
+      MENU_STATUS.MUST_REDRAW = 1;
       break;
     case BUT_DN_OFF:
       val--;
+      *(pe->address) = val;
+      MENU_STATUS.MUST_REDRAW = 1;
       break;
     case BUT_OK_OFF:
-      return 1;
+      retval = 1;
       break;
     case BUT_ES_OFF:
-      return 1;
+      retval = 1;
       break;
   }
-  EnumMenuValueFunction(enumdata, enumlist);
-  LCDSendCmd(DD_RAM_ADDR2 + ((DISPLAY_WIDTH - strlen(GetDisplayBuffer(2))) / 2));
-  LCDSendStr(GetDisplayBuffer(2));
-  return 0;
+  TestEnumValue(enumdata);
+
+  if (MENU_STATUS.MUST_REDRAW)
+  {
+    EnumMenuValueFunction(enumdata, enumlist);
+    LCDSendCmd(DD_RAM_ADDR2 + ((DISPLAY_WIDTH - strlen(GetDisplayBuffer(2))) / 2));
+    LCDSendStr(GetDisplayBuffer(2));
+    MENU_STATUS.MUST_REDRAW = 0;
+  }
+
+  return retval;
 }
 
 int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
@@ -144,10 +168,10 @@ int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
       LCDSendCmd(CLR_DISP);
       if (menu_stack[menu_stack_ptr]->options.MENU_TYPE == HAS_SUBMENU)
       { /* There are submenu. */
-        sprintf(GetDisplayBuffer(1), "<- %s ->", menu_stack[menu_stack_ptr]->title);
+        sprintf(GetDisplayBuffer(1), "\xC8 %s \xC9", menu_stack[menu_stack_ptr]->title);
       } else
       { /* No submenu perhaps enumerate, or direct value setting. */
-        sprintf(GetDisplayBuffer(1), "<- %s :", menu_stack[menu_stack_ptr]->title);
+        sprintf(GetDisplayBuffer(1), "\xC8 %s :", menu_stack[menu_stack_ptr]->title);
         switch (menu_stack[menu_stack_ptr]->options.DATA_TYPE)
         {
           case ENUM:
@@ -198,9 +222,11 @@ int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
         {
           case ENUM:
             LCDSendCmd(DD_RAM_ADDR2);
-            LCDSendCmd(CUR_ON_BLINK);
+            LCDSendChar('\xD9');
+            LCDSendCmd(DD_RAM_ADDR2 + (DISPLAY_WIDTH - 1));
+            LCDSendChar('\xDA');
             while (!EnumMenuEditFunction(menu_stack[menu_stack_ptr]->param1, menu_stack[menu_stack_ptr]->param2));
-            LCDSendCmd(CUR_OFF);
+            PROGRAM_STATUS->MUST_REDRAW = 1;
             break;
           case TINT:
             break;

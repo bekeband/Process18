@@ -18,6 +18,16 @@ typedef struct s_menu_item* p_menu_item;
 typedef enum e_data_type {ENUM, TINT, FLOAT, TEXT};
 typedef enum e_menu_type {EDITED_VALUE, VIEWED_VALUE, HAS_SUBMENU};
 
+  typedef union {
+  struct {
+    unsigned MUST_REDRAW:   1;
+  };
+  struct {
+    uint8_t STATUS_BYTE;
+  };
+} s_menu_edit_status;
+
+
 typedef void t_GetTextFunction(char*);
 
 struct s_menu_options {
@@ -36,8 +46,8 @@ struct s_menu_item {
 };
 
 struct s_enum_data {
-  uint8_t*  address;
-  int8_t   size;
+  int8_t*  address;
+  int8_t    size;
 };
 typedef struct s_enum_data* p_enum_data;
 

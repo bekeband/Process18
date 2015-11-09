@@ -44,7 +44,7 @@ void InitLCD(void) {
 }
 
 // Send char to LCD
-LCDSendChar(unsigned char c) {
+void LCDSendChar(unsigned char c) {
 
 	DelayMs(2);
 	//get upper nibble

@@ -37,18 +37,18 @@ extern "C" {
 } s_status;
 
 typedef struct  {
-  uint8_t serial_speed;
-  uint8_t button_beep;
+  int8_t serial_speed;
+  int8_t button_beep;
   int16_t display_refresh_time;
-  uint8_t   display_topline;
-  uint8_t   display_botline;
+  int8_t   display_topline;
+  int8_t   display_botline;
 }s_setting_datas;
 
 typedef s_setting_datas* p_setting_datas;
 
 typedef struct {
-  uint8_t   input_type; // 0 = 4 - 20 mA, 1 = 0- 20 mA
-  uint8_t   input_dimension;
+  int8_t   input_type; // 0 = 4 - 20 mA, 1 = 0- 20 mA
+  int8_t   input_dimension;
   float     min_val;
   float     max_val;
   uint16_t  min_eng;

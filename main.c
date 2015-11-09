@@ -13,7 +13,7 @@
 
 uint8_t but;
 
-char WELCOME[] = "PD18F VER %i.%i";
+char WELCOME[DISPLAY_WIDTH + 1] = "PD18F VER %i.%i";
 
 s_setting_datas settings = {0, 0, 1, 1, 2};
 s_analog_data analogs[ANALOG_CHANNELS] = {{0, 0, 0, 100, 0, 567, 28767}};
@@ -109,10 +109,7 @@ void interrupt isr(void)
 };
 
 void main()
-{ int8_t MenuComm;
-	char DPBUFFER[DISPLAY_WIDTH + 1];
-  PROGRAM_STATUS.MUST_REDRAW = 1;
-
+{ 
   PORTA = 0;
   LATA = 0;
   ANSEL = 0x01;
@@ -132,8 +129,6 @@ void main()
   PIE1bits.TMR2IE = 1;
   IPR1bits.TMR2IP = 1;
   T2CONbits.TMR2ON = 1;
-
-//  InitButtons();
 
   InitLCD();
 
@@ -160,7 +155,8 @@ void main()
   /* TODO Init datas remove !!!*/
 
   InitSettingDatas();
-
+  int i;
+  int j;
   while (1)
   {
 
@@ -175,16 +171,16 @@ void main()
     {
       LCDSendCmd(DISP_ON);
       LCDSendCmd(CLR_DISP);
-      sprintf(DPBUFFER, WELCOME, VERH, VERL);
-      LCDSendStr(DPBUFFER);
+      sprintf(LINE_01_BUFFER, WELCOME, VERH, VERL);
+      LCDSendStr(LINE_01_BUFFER);
       PROGRAM_STATUS.MUST_REDRAW = 0;
     }
 
     if (PROGRAM_STATUS.AD_REFRESH)
     {
-      sprintf(DPBUFFER, "%6i", AD_VALUE);
+      sprintf(LINE_02_BUFFER, "%6i", AD_VALUE);
       LCDSendCmd(DD_RAM_ADDR2);
-      LCDSendStr(DPBUFFER);
+      LCDSendStr(LINE_02_BUFFER);
       PROGRAM_STATUS.DISPLAY_REFRESH = 0;
       PROGRAM_STATUS.AD_REFRESH = 0;
     }
@@ -198,6 +194,15 @@ void main()
         PROGRAM_STATUS.MUST_REDRAW = 1;
         break;
       case BUT_RG_OFF:
+        
+        j++;
+        for (i = 0; i < 16; i++)
+        {
+
+          WELCOME[i] = (16*j) + i + ' ';
+        }
+        WELCOME[16] = '\0';
+        PROGRAM_STATUS.MUST_REDRAW = 1;
         break;
     }
 
