@@ -96,6 +96,7 @@ int TestEnumValue(void* enumdata)
 int EnumMenuValueFunction(void* enumdata, const char* enumlist[])
 { p_enum_data pe;
   pe = (p_enum_data)enumdata;
+  TestEnumValue(enumdata);
   strcpy(GetDisplayBuffer(2), enumlist[*(pe->address)]);
 }
 
@@ -124,45 +125,56 @@ int IntMenuValueFunction(void* p)
 }
 
 int EnumMenuEditFunction(void* enumdata, const char* enumlist[])
-{ uint8_t but; p_enum_data pe; int8_t val;
-  but = ButtonScan(); int retval = 0;
+{ uint8_t but; p_enum_data pe; int exit_edit = 0; 
+  uint8_t enum_val, old_enum_val;
+  int retval = 0;
+  enum_val = *(pe->address);
+  old_enum_val = *(pe->address);
+  while (!exit_edit)
+  {
+  but = ButtonScan();
   pe = (p_enum_data)enumdata;
-  val = *(pe->address);
+
   switch (but)
   {
     case BUT_UP_OFF:
-      val++;
-      *(pe->address) = val;
-      MENU_STATUS.MUST_REDRAW = 1;
+      if ((enum_val++) >= pe->size)
+        enum_val = pe->size - 1;
+      else MENU_STATUS.MUST_REDRAW = 1; // enum value was changed !
       break;
     case BUT_DN_OFF:
-      val--;
-      *(pe->address) = val;
-      MENU_STATUS.MUST_REDRAW = 1;
+      if (enum_val-- < 0)
+        enum_val = 0;
+      else MENU_STATUS.MUST_REDRAW = 1; // enum value changed !
       break;
     case BUT_OK_OFF:
-      retval = 1;
+      (*(pe->address)) = enum_val;
+      exit_edit = 1;
       break;
     case BUT_ES_OFF:
-      retval = 1;
+      MENU_STATUS.MUST_SAVE = 0;
+      exit_edit = 1;
       break;
-  }
-  TestEnumValue(enumdata);
+    }
 
-  if (MENU_STATUS.MUST_REDRAW)
+  if (enum_val != old_enum_val)
   {
+    MENU_STATUS.MUST_SAVE = 1;
     EnumMenuValueFunction(enumdata, enumlist);
     LCDSendCmd(DD_RAM_ADDR2 + ((DISPLAY_WIDTH - strlen(GetDisplayBuffer(2))) / 2));
     LCDSendStr(GetDisplayBuffer(2));
     MENU_STATUS.MUST_REDRAW = 0;
   }
 
+
+  }
+  
   return retval;
 }
 
 int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
 { 
-  int retval = 0;
+  int retval = 0; int edit_retval;
   if (PROGRAM_STATUS->MUST_REDRAW)
     {
       LCDSendCmd(CLR_DISP);
@@ -175,7 +187,9 @@ int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
         switch (menu_stack[menu_stack_ptr]->options.DATA_TYPE)
         {
           case ENUM:
+
             EnumMenuValueFunction(menu_stack[menu_stack_ptr]->param1, menu_stack[menu_stack_ptr]->param2);
+            
             break;
           case TINT:
             IntMenuValueFunction(menu_stack[menu_stack_ptr]->param1);
@@ -225,7 +239,9 @@ int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
             LCDSendChar('\xD9');
             LCDSendCmd(DD_RAM_ADDR2 + (DISPLAY_WIDTH - 1));
             LCDSendChar('\xDA');
-            while (!EnumMenuEditFunction(menu_stack[menu_stack_ptr]->param1, menu_stack[menu_stack_ptr]->param2));
+
+            edit_retval = EnumMenuEditFunction(menu_stack[menu_stack_ptr]->param1, menu_stack[menu_stack_ptr]->param2);
+            
             PROGRAM_STATUS->MUST_REDRAW = 1;
             break;
           case TINT:

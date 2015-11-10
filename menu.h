@@ -21,6 +21,7 @@ typedef enum e_menu_type {EDITED_VALUE, VIEWED_VALUE, HAS_SUBMENU};
   typedef union {
   struct {
     unsigned MUST_REDRAW:   1;
+    unsigned MUST_SAVE:     1;
   };
   struct {
     uint8_t STATUS_BYTE;
