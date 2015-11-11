@@ -25,8 +25,8 @@ extern "C" {
 #define		CUR_OFF 		0x0C
 #define 	CUR_ON_UNDER    0x0E
 #define		CUR_ON_BLINK    0x0F
-#define 	CUR_LEFT        0x10
-#define		CUR_RIGHT       0x14
+#define 	CUR_LEFT        0x06
+#define		CUR_RIGHT       0x04
 #define		CUR_UP  		0x80
 #define		CUR_DOWN		0xC0
 #define		ENTER           0xC0

@@ -36,6 +36,8 @@ unsigned long int AD_SUMMA = 0;
 unsigned int AD_OVERSAMPLE_COUNTER = 0;
 unsigned int AD_VALUE;
 
+int display_refresh_counter_set = 625;
+
 s_status PROGRAM_STATUS;    // Program status. and flags.
 int8_t ACTUAL_MENU = 0;
 
@@ -80,10 +82,10 @@ void interrupt isr(void)
   if (PIR1bits.TMR2IF)
   {
     PIR1bits.TMR2IF = 0;
-    if (display_refresh_counter++ >= settings.display_refresh_time)
+    if (display_refresh_counter++ >= display_refresh_counter_set) // settings.display_refresh_time)
     {
       display_refresh_counter = 0;
-//      PROGRAM_STATUS.DISPLAY_REFRESH = 1; /*    */
+      PROGRAM_STATUS.DISPLAY_REFRESH = 1; /*    */
 //      LATBbits.LATB4 = !PORTBbits.RB4;
     }
   };
@@ -176,7 +178,7 @@ void main()
       PROGRAM_STATUS.MUST_REDRAW = 0;
     }
 
-    if (PROGRAM_STATUS.AD_REFRESH)
+    if (PROGRAM_STATUS.DISPLAY_REFRESH) // AD_REFRESH)
     {
       sprintf(LINE_02_BUFFER, "%6i", AD_VALUE);
       LCDSendCmd(DD_RAM_ADDR2);

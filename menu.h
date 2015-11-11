@@ -35,6 +35,7 @@ struct s_menu_options {
   uint8_t SEC_LEVEL;
   uint8_t MENU_TYPE;
   enum e_data_type DATA_TYPE;
+  uint8_t IS_ROLLING;
 };
 
 struct s_menu_item {
@@ -64,6 +65,8 @@ struct s_int_data {
   int   maxvalue;
 };
 typedef struct s_int_data* p_int_data;
+
+typedef struct s_menu_options* p_menu_options;
 
 struct s_float_data {
   float*  address;
