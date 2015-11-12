@@ -46,7 +46,7 @@ struct s_menu_item input_menus[] =
 { {&input_menus[1], &input_menus[3], &input_type_datas[0], &input_type_enum_array[0], {0,0,ENUM}, (char*)"TYPE"},
   {&input_menus[2], &input_menus[0], &input_low_range_datas[0], NULL, {0,0,FLOAT}, (char*)"RANGE LOW"},
   {&input_menus[3], &input_menus[1], &input_high_range_datas[0], NULL, {0,0,FLOAT}, (char*)"RANGE HIGH"},
-  {&input_menus[4], &input_menus[2], &input_average_datas[0], NULL, {0,0,TINT,1}, (char*)"AVERAGE"},
+  {&input_menus[4], &input_menus[2], &input_average_datas[0], NULL, {0,0,TINT,0}, (char*)"AVERAGE"},
   {&input_menus[0], &input_menus[3], NULL, NULL, {0,0,0}, (char*)"CALIB"}};
 
 struct s_menu_item main_menus[] =
@@ -126,19 +126,86 @@ int IntMenuValueFunction(void* p)
   else strcpy(GetDisplayBuffer(2), "N/A");
 }
 
+char IncrementDecNumber(char c, int suppress_minus, int suppress_space)
+{
+  switch (c)
+  {
+    case ' ':
+      if (!suppress_minus)
+      {
+        c = '-';
+      } else c = '0';
+
+    break;
+    case '-':
+      c = '0';
+    break;
+    case '9':
+      if (!suppress_space)
+      {
+        c = ' ';
+      } else
+        if (!suppress_minus)
+        {
+          c = '-';
+        } else
+          c = '0';
+      break;
+    default:
+      c++;
+      break;
+  }
+  return c;
+}
+
+char DecrementDecNumber(char c, int suppress_minus, int suppress_space)
+{
+  switch (c)
+  {
+    case '-':
+      if (!suppress_minus)
+      {
+        c = ' ';
+      } else c = '9';
+
+    break;
+    case ' ':
+      c = '9';
+    break;
+    case '0':
+      if (!suppress_space)
+      {
+        c = ' ';
+      } else
+        if (!suppress_minus)
+        {
+          c = '-';
+        } else
+          c = '9';
+      break;
+    default:
+      c--;
+      break;
+  }
+  return c;
+}
+
 int IntMenuEditFunction(void* p, uint8_t is_rolling)
 { p_int_data pi; int retval =0; int exit_edit = 0;
   pi = (p_int_data)p; uint8_t but; int cursor_pos;
   int int_val, old_int_val;
   int_val = *(pi->address);
   old_int_val = *(pi->address);
-
+  char IntEditBuffer[13];
   cursor_pos = 2;
-
-  LCDSendCmd(CLR_DISP);
-  LCDSendCmd(DD_RAM_ADDR2 + cursor_pos);
+  if ((int_val) > pi->maxvalue) { int_val = pi->maxvalue;};
+  if ((int_val) < pi->minvalue)  {int_val = pi->minvalue;};
+  if (!is_rolling)
+  {
+    sprintf(IntEditBuffer, "%12i", int_val);
+  }
   LCDSendCmd(CUR_ON_BLINK);
-  LCDSendCmd(0x10);
+
   MENU_STATUS.MUST_REDRAW = 1;
   while (!exit_edit)
   {
@@ -147,28 +214,38 @@ int IntMenuEditFunction(void* p, uint8_t is_rolling)
     switch (but)
     {
     case BUT_RG_OFF:
-      LCDSendCmd(CUR_RIGHT);
-      MENU_STATUS.MUST_REDRAW = 1;
-      break;
-    case BUT_LF_OFF:
-      LCDSendCmd(CUR_LEFT);
-      MENU_STATUS.MUST_REDRAW = 1;
-      break;
-    case BUT_UP_OFF:
-      if (is_rolling)
-      int_val++;
+      if (!is_rolling)
+      { LCDSendCmd(CUR_RIGHT); cursor_pos++; }
       else
       {
 
+      }
+//      MENU_STATUS.MUST_REDRAW = 1;
+      break;
+    case BUT_LF_OFF:
+      if (!is_rolling)
+      { LCDSendCmd(CUR_LEFT); cursor_pos--; }
+      else
+      {
+        
+      }
+//      MENU_STATUS.MUST_REDRAW = 1;
+      break;
+    case BUT_UP_OFF:
+      if (is_rolling)
+      { int_val++; }
+      else
+      {
+        IntEditBuffer[cursor_pos - 2] = IncrementDecNumber(IntEditBuffer[cursor_pos - 2], 0, 0);
       }
       MENU_STATUS.MUST_REDRAW = 1;
       break;
     case BUT_DN_OFF:
       if (is_rolling)
-      int_val--;
-      else
+      { int_val--; }
+      else 
       {
-
+        IntEditBuffer[cursor_pos - 2] = DecrementDecNumber(IntEditBuffer[cursor_pos - 2], 0, 0);
       }
       MENU_STATUS.MUST_REDRAW = 1;
       break;
@@ -187,11 +264,22 @@ int IntMenuEditFunction(void* p, uint8_t is_rolling)
     if ((int_val) < pi->minvalue)  {int_val = pi->minvalue;};
     if (MENU_STATUS.MUST_REDRAW)
     {
-      MENU_STATUS.MUST_SAVE = 1;
-      sprintf(GetDisplayBuffer(2), "\xD9 %12i \xDA", int_val);
-      LCDSendCmd(DD_RAM_ADDR2);
-      LCDSendStr(GetDisplayBuffer(2));
-      MENU_STATUS.MUST_REDRAW = 0;
+      if (is_rolling)
+      {
+        MENU_STATUS.MUST_SAVE = 1;
+        sprintf(GetDisplayBuffer(2), "\xD9 %12i \xDA", int_val);
+        LCDSendCmd(DD_RAM_ADDR2);
+        LCDSendStr(GetDisplayBuffer(2));
+        LCDSendCmd(DD_RAM_ADDR2 + cursor_pos);
+        MENU_STATUS.MUST_REDRAW = 0;
+      } else
+      {
+        sprintf(GetDisplayBuffer(2), "\xD9 %12s \xDA", IntEditBuffer);
+        LCDSendCmd(DD_RAM_ADDR2);
+        LCDSendStr(GetDisplayBuffer(2));
+        LCDSendCmd(DD_RAM_ADDR2 + cursor_pos);
+        MENU_STATUS.MUST_REDRAW = 0;
+      }
     }
 
   }
