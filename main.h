@@ -58,6 +58,9 @@ typedef struct {
   float     summa;
 } s_analog_data;
 
+#define CAN_ROLLING 1
+#define CANT_ROLLING 0
+
 typedef s_analog_data* p_analog_data;
 
 char* GetDisplayBuffer(int line);

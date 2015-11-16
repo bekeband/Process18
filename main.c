@@ -10,6 +10,7 @@
 #include "delay.h"
 #include "menu.h"
 #include "eeprom.h"
+#include "crc.h"
 
 uint8_t but;
 
@@ -37,6 +38,8 @@ unsigned int AD_OVERSAMPLE_COUNTER = 0;
 unsigned int AD_VALUE;
 
 int display_refresh_counter_set = 625;
+
+uint16_t CHECKED_EEPROM_SIZE;
 
 s_status PROGRAM_STATUS;    // Program status. and flags.
 int8_t ACTUAL_MENU = 0;
@@ -111,7 +114,12 @@ void interrupt isr(void)
 };
 
 void main()
-{ 
+{
+  uint16_t CRC_ADDRESS = _EEPROMSIZE - 2; // Last word the CRC checksum.
+  uint16_t CALCCHECKSUM;
+  uint16_t STOREDCHECKSUM;
+
+
   PORTA = 0;
   LATA = 0;
   ANSEL = 0x01;
@@ -149,7 +157,8 @@ void main()
   ADCON0bits.GO = 1;  // First start A/D conversion.
   PROGRAM_STATUS.MUST_REDRAW = 1;
 
-  
+  CALCCHECKSUM = gen_crc16(Read_b_eep, CHECKED_EEPROM_SIZE, 0);
+  ReadDataEEP((char*) &STOREDCHECKSUM, CRC_ADDRESS, 2);
 
   GetADsDataFromEEPROM();
   GetSettingsDataFromEEPROM();

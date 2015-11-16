@@ -43,11 +43,11 @@ struct s_menu_item system_menus[] =
   {&system_menus[0], &system_menus[1], NULL, NULL, {0,0,0}, (char*)"RESET"}};
 
 struct s_menu_item input_menus[] =
-{ {&input_menus[1], &input_menus[3], &input_type_datas[0], &input_type_enum_array[0], {0,0,ENUM}, (char*)"TYPE"},
-  {&input_menus[2], &input_menus[0], &input_low_range_datas[0], NULL, {0,0,FLOAT}, (char*)"RANGE LOW"},
-  {&input_menus[3], &input_menus[1], &input_high_range_datas[0], NULL, {0,0,FLOAT}, (char*)"RANGE HIGH"},
-  {&input_menus[4], &input_menus[2], &input_average_datas[0], NULL, {0,0,TINT,0}, (char*)"AVERAGE"},
-  {&input_menus[0], &input_menus[3], NULL, NULL, {0,0,0}, (char*)"CALIB"}};
+{ {&input_menus[1], &input_menus[3], &input_type_datas[0], &input_type_enum_array[0], {0, 0, ENUM}, (char*)"TYPE"},
+  {&input_menus[2], &input_menus[0], &input_low_range_datas[0], NULL, {0, 0, FLOAT}, (char*)"RANGE LOW"},
+  {&input_menus[3], &input_menus[1], &input_high_range_datas[0], NULL, {0, 0, FLOAT}, (char*)"RANGE HIGH"},
+  {&input_menus[4], &input_menus[2], &input_average_datas[0], NULL, {0, 0, TINT, CAN_ROLLING}, (char*)"AVERAGE"},
+  {&input_menus[0], &input_menus[3], NULL, NULL, {0, 0, 0}, (char*)"CALIB"}};
 
 struct s_menu_item main_menus[] =
 { {&main_menus[1], &main_menus[3], &input_menus[0], NULL, {0,HAS_SUBMENU,0},(char*)"INPUT"},
@@ -57,74 +57,6 @@ struct s_menu_item main_menus[] =
 
 uint8_t menu_stack_ptr = 0;
 p_menu_item menu_stack[3] = {&main_menus[0], };
-
-void InitSettingDatas()
-{ int i;
-  display_data_topline.address = &(GetSettingPtr()->display_topline);
-  display_data_botline.address = &(GetSettingPtr()->display_botline);
-  serial_data.address = &(GetSettingPtr()->serial_speed);
-  refresh_data.address = &(GetSettingPtr()->display_refresh_time);
-
-  for (i = 0; i < ANALOG_CHANNELS; i++)
-  {
-    input_type_datas[i].address = &(GetAnalogDataPtr(i)->input_type);
-    input_type_datas[i].address = &(GetAnalogDataPtr(i)->input_type);
-    input_low_range_datas[i].address = &(GetAnalogDataPtr(i)->min_val);
-    input_high_range_datas[i].address = &(GetAnalogDataPtr(i)->max_val);
-  }
-}
-
-static void GetVersion(char* c)
-{
-  sprintf(c, "VER %i.%i", VER_H, VER_L);
-}
-
-int TestEnumValue(void* enumdata)
-{ p_enum_data pe; int retval = 0;
-  pe = (p_enum_data)enumdata;
-  if ((*(pe->address)) < 0)
-  {
-    retval = 1;
-    *(pe->address) = (pe->size - 1);
-  };
-  if (*(pe->address) > (pe->size - 1))
-  {
-    retval = 1;
-    *(pe->address) = 0;
-  };
-  retval = 0;
-}
-
-int EnumMenuValueFunction(void* enumdata, const char* enumlist[])
-{ p_enum_data pe;
-  pe = (p_enum_data)enumdata;
-  TestEnumValue(enumdata);
-  strcpy(GetDisplayBuffer(2), enumlist[*(pe->address)]);
-}
-
-int FloatMenuValueFunction(void* p)
-{ p_float_data pf;
-  pf = (p_float_data)p;
-  float val = *(pf->address);
-  if ((val >= pf->minvalue) && (val <= pf->maxvalue))
-    sprintf(GetDisplayBuffer(2), "%8.2f", val);
-  else strcpy(GetDisplayBuffer(2), "N/A");
-}
-
-int TextMenuValueFunction(void* p)
-{ p_text_data pt;
-  pt = (p_text_data)p;
-  strcpy(GetDisplayBuffer(2), pt->address);
-}
-
-int IntMenuValueFunction(void* p)
-{ p_int_data pi;
-  pi = (p_int_data)p;
-  int val = *(pi->address);
-  if ((val >= pi->minvalue) && (val <= pi->maxvalue))
-    sprintf(GetDisplayBuffer(2), "%8i", val);
-  else strcpy(GetDisplayBuffer(2), "N/A");
-}
 
 char IncrementDecNumber(char c, int suppress_minus, int suppress_space)
 {
@@ -190,7 +122,133 @@ char DecrementDecNumber(char c, int suppress_minus, int suppress_space)
   return c;
 }
 
-int IntMenuEditFunction(void* p, uint8_t is_rolling)
+void InitSettingDatas()
+{ int i;
+  display_data_topline.address = &(GetSettingPtr()->display_topline);
+  display_data_botline.address = &(GetSettingPtr()->display_botline);
+  serial_data.address = &(GetSettingPtr()->serial_speed);
+  refresh_data.address = &(GetSettingPtr()->display_refresh_time);
+
+  for (i = 0; i < ANALOG_CHANNELS; i++)
+  {
+    input_type_datas[i].address = &(GetAnalogDataPtr(i)->input_type);
+    input_type_datas[i].address = &(GetAnalogDataPtr(i)->input_type);
+    input_low_range_datas[i].address = &(GetAnalogDataPtr(i)->min_val);
+    input_high_range_datas[i].address = &(GetAnalogDataPtr(i)->max_val);
+  }
+}
+
+static void GetVersion(char* c)
+{
+  sprintf(c, "VER %i.%i", VER_H, VER_L);
+}
+
+int8_t TestEnumValue(int8_t enum_val, p_enum_data pe)
+{
+  if ((enum_val) >= pe->size) { enum_val = 0;};
+  if ((enum_val) < 0) {enum_val = (pe->size) - 1;};
+  return enum_val;
+}
+
+int EnumMenuValueFunction(void* enumdata, const char* enumlist[])
+{ uint8_t enum_val;
+  enum_val = *((p_enum_data)enumdata)->address;
+  enum_val = TestEnumValue(enum_val, enumdata);
+  strcpy(GetDisplayBuffer(2), enumlist[enum_val]);
+}
+
+int TestIntValue(int int_val, p_int_data pi)
+{
+  if ((int_val) > pi->maxvalue) { int_val = pi->maxvalue;};
+  if ((int_val) < pi->minvalue)  {int_val = pi->minvalue;};
+  return int_val;
+}
+
+float TestFloatValue(float float_val, p_float_data pf)
+{
+  if ((float_val) > pf->maxvalue) { float_val = pf->maxvalue;};
+  if ((float_val) < pf->minvalue)  {float_val = pf->minvalue;};
+  return float_val;
+}
+
+int FloatMenuValueFunction(void* p)
+{ p_float_data pf;
+  pf = (p_float_data)p;
+  float val = TestFloatValue(*(pf->address), pf);
+  sprintf(GetDisplayBuffer(2), "%8.2f", val);
+}
+
+int TextMenuValueFunction(void* p)
+{ p_text_data pt;
+  pt = (p_text_data)p;
+  strcpy(GetDisplayBuffer(2), pt->address);
+}
+
+int IntMenuValueFunction(void* p)
+{ p_int_data pi;
+  pi = (p_int_data)p;
+  int val = TestIntValue(*(pi->address), pi);
+  sprintf(GetDisplayBuffer(2), "%8i", val);
+}
+
+/* If integer value can set with value rolling function to increment, and decrement value. */
+int IntMenuEditFunctionwRolling(void* p)
+{ p_int_data pi; int exit_edit = 0; uint8_t but;
+  int int_val, old_int_val, retval = NO_CHANGED;
+  pi = p;
+  int_val = *(pi->address);
+  old_int_val = *(pi->address);
+  retval = 0;
+  MENU_STATUS.MUST_REDRAW = 1;
+  while (!exit_edit)
+  {
+    but = ButtonScan();
+    switch (but)
+    {
+    case BUT_RG_OFF:
+      int_val += 10;
+      MENU_STATUS.MUST_REDRAW = 1;
+      break;
+    case BUT_LF_OFF:
+      int_val -= 10;
+      MENU_STATUS.MUST_REDRAW = 1;
+      break;
+    case BUT_UP_OFF:
+      int_val++;
+      MENU_STATUS.MUST_REDRAW = 1;
+      break;
+    case BUT_DN_OFF:
+      int_val--;
+      MENU_STATUS.MUST_REDRAW = 1;
+      break;
+    case BUT_OK_OFF:
+      (*(pi->address)) = int_val;
+      if (int_val != old_int_val)
+      {
+        retval = DATA_CHANGED;
+      }
+      exit_edit = 1;
+      break;
+    case BUT_ES_OFF:
+      MENU_STATUS.MUST_SAVE = 0;
+      LCDSendCmd(CUR_OFF);
+      exit_edit = 1;
+      break;
+    }
+    int_val = TestIntValue(int_val, pi);
+    if (MENU_STATUS.MUST_REDRAW)
+    {
+      MENU_STATUS.MUST_SAVE = 1;
+      sprintf(GetDisplayBuffer(2), "\xD9 %12i \xDA", int_val);
+      LCDSendCmd(DD_RAM_ADDR2);
+      LCDSendStr(GetDisplayBuffer(2));
+      MENU_STATUS.MUST_REDRAW = 0;
+    }
+  }
+  return retval;
+}
+
+int IntMenuEditFunction(void* p)
 { p_int_data pi; int retval =0; int exit_edit = 0;
   pi = (p_int_data)p; uint8_t but; int cursor_pos;
   int int_val, old_int_val;
@@ -200,10 +258,7 @@ int IntMenuEditFunction(void* p, uint8_t is_rolling)
   cursor_pos = 2;
   if ((int_val) > pi->maxvalue) { int_val = pi->maxvalue;};
   if ((int_val) < pi->minvalue)  {int_val = pi->minvalue;};
-  if (!is_rolling)
-  {
-    sprintf(IntEditBuffer, "%12i", int_val);
-  }
+  sprintf(IntEditBuffer, "%12i", int_val);
   LCDSendCmd(CUR_ON_BLINK);
 
   MENU_STATUS.MUST_REDRAW = 1;
@@ -214,39 +269,19 @@ int IntMenuEditFunction(void* p, uint8_t is_rolling)
     switch (but)
     {
     case BUT_RG_OFF:
-      if (!is_rolling)
-      { LCDSendCmd(CUR_RIGHT); cursor_pos++; }
-      else
-      {
-
-      }
+      LCDSendCmd(CUR_RIGHT); cursor_pos++;
 //      MENU_STATUS.MUST_REDRAW = 1;
       break;
     case BUT_LF_OFF:
-      if (!is_rolling)
-      { LCDSendCmd(CUR_LEFT); cursor_pos--; }
-      else
-      {
-        
-      }
+      LCDSendCmd(CUR_LEFT); cursor_pos--;
 //      MENU_STATUS.MUST_REDRAW = 1;
       break;
     case BUT_UP_OFF:
-      if (is_rolling)
-      { int_val++; }
-      else
-      {
-        IntEditBuffer[cursor_pos - 2] = IncrementDecNumber(IntEditBuffer[cursor_pos - 2], 0, 0);
-      }
+      IntEditBuffer[cursor_pos - 2] = IncrementDecNumber(IntEditBuffer[cursor_pos - 2], 0, 0);
       MENU_STATUS.MUST_REDRAW = 1;
       break;
     case BUT_DN_OFF:
-      if (is_rolling)
-      { int_val--; }
-      else 
-      {
-        IntEditBuffer[cursor_pos - 2] = DecrementDecNumber(IntEditBuffer[cursor_pos - 2], 0, 0);
-      }
+      IntEditBuffer[cursor_pos - 2] = DecrementDecNumber(IntEditBuffer[cursor_pos - 2], 0, 0);
       MENU_STATUS.MUST_REDRAW = 1;
       break;
     case BUT_OK_OFF:
@@ -259,29 +294,15 @@ int IntMenuEditFunction(void* p, uint8_t is_rolling)
       exit_edit = 1;
       break;
     }
-
-    if ((int_val) > pi->maxvalue) { int_val = pi->maxvalue;};
-    if ((int_val) < pi->minvalue)  {int_val = pi->minvalue;};
+    int_val = TestIntValue(int_val, pi);
     if (MENU_STATUS.MUST_REDRAW)
     {
-      if (is_rolling)
-      {
-        MENU_STATUS.MUST_SAVE = 1;
-        sprintf(GetDisplayBuffer(2), "\xD9 %12i \xDA", int_val);
-        LCDSendCmd(DD_RAM_ADDR2);
-        LCDSendStr(GetDisplayBuffer(2));
-        LCDSendCmd(DD_RAM_ADDR2 + cursor_pos);
-        MENU_STATUS.MUST_REDRAW = 0;
-      } else
-      {
-        sprintf(GetDisplayBuffer(2), "\xD9 %12s \xDA", IntEditBuffer);
-        LCDSendCmd(DD_RAM_ADDR2);
-        LCDSendStr(GetDisplayBuffer(2));
-        LCDSendCmd(DD_RAM_ADDR2 + cursor_pos);
-        MENU_STATUS.MUST_REDRAW = 0;
-      }
+      sprintf(GetDisplayBuffer(2), "\xD9 %12s \xDA", IntEditBuffer);
+      LCDSendCmd(DD_RAM_ADDR2);
+      LCDSendStr(GetDisplayBuffer(2));
+      LCDSendCmd(DD_RAM_ADDR2 + cursor_pos);
+      MENU_STATUS.MUST_REDRAW = 0;
     }
-
   }
   return retval;
 }
@@ -393,12 +414,28 @@ int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS)
         {
           case ENUM:
  
-            edit_retval = EnumMenuEditFunction(menu_stack[menu_stack_ptr]->param1, menu_stack[menu_stack_ptr]->param2);
-            
+            edit_retval =  EnumMenuEditFunction(menu_stack[menu_stack_ptr]->param1, menu_stack[menu_stack_ptr]->param2);
+
             PROGRAM_STATUS->MUST_REDRAW = 1;
             break;
           case TINT:
-            edit_retval = IntMenuEditFunction(menu_stack[menu_stack_ptr]->param1, menu_stack[menu_stack_ptr]->options.IS_ROLLING );
+            if (menu_stack[menu_stack_ptr]->options.IS_ROLLING)
+            {
+              if (IntMenuEditFunctionwRolling(menu_stack[menu_stack_ptr]->param1) == DATA_CHANGED)
+              {
+                LCDSendCmd(DD_RAM_ADDR2);
+                LCDSendStr("DATA CHANGED");
+              } else
+              {
+                LCDSendCmd(DD_RAM_ADDR2);
+                LCDSendStr("DATA NO CHANGED");                
+              }
+                while (1);
+
+            } else
+            {
+              edit_retval = IntMenuEditFunction(menu_stack[menu_stack_ptr]->param1);
+            }
             PROGRAM_STATUS->MUST_REDRAW = 1;
             break;
           case FLOAT:

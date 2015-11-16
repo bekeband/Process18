@@ -84,6 +84,8 @@ extern struct s_menu_item main_menus[];
 int MenuProcess(uint8_t but, s_status* PROGRAM_STATUS);
 void InitSettingDatas();
 
+enum edit_retval {NO_CHANGED, DATA_CHANGED};
+
 #ifdef	__cplusplus
 }
 #endif
