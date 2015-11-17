@@ -115,6 +115,9 @@ void interrupt isr(void)
 
 void main()
 {
+
+  WriteDataEEP(&WELCOME, 0, 17);
+
   uint16_t CRC_ADDRESS = _EEPROMSIZE - 2; // Last word the CRC checksum.
   uint16_t CALCCHECKSUM;
   uint16_t STOREDCHECKSUM;
@@ -215,6 +218,13 @@ void main()
         WELCOME[16] = '\0';
         PROGRAM_STATUS.MUST_REDRAW = 1;
         break;
+
+      case BUT_LF_OFF:
+        WriteDataEEP(&WELCOME, 0, 17);
+        strcpy(WELCOME, "WRITE OK");
+        PROGRAM_STATUS.MUST_REDRAW = 1;
+        break;
+
     }
 
 

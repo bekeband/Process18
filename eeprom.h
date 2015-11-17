@@ -15,6 +15,10 @@ extern "C" {
 void ReadDataEEP(uint8_t* d_ptr, int baddr, int size);
 void WriteDataEEP(uint8_t* d_ptr, int baddr, int size);
 
+void Busy_eep ( void );
+unsigned char Read_b_eep( unsigned int badd );
+void Write_b_eep( unsigned int badd, unsigned char bdat );
+
 
 #ifdef	__cplusplus
 }
